@@ -33,16 +33,17 @@ class Integration
             //формируем необходимые поля
             $article["NAME"] = $arFields["NAME"];                                                   // название
             $article["ID"] = $arFields["ID"];                                                       // ID
-            $article["PREVIEW_PICTURE"] = $arFields["PREVIEW_PICTURE"];                             // Картинки А
-            $article["DETAIL_PICTURE"] = $arFields["DETAIL_PICTURE"];                               // Картинки Д
+            $article["PREVIEW_PICTURE"] = CFile::GetPath($arFields["PREVIEW_PICTURE"]);             // Картинки А
+            $article["DETAIL_PICTURE"] = CFile::GetPath($arFields["DETAIL_PICTURE"]);               // Картинки Д
             $article["ARTICLE"] = trim($arProps["CML2_ARTICLE"]["VALUE"]);                          // Артикль
             $article["PROIZVODITEL"] = $arProps["PROIZVODITEL"]["VALUE"];                           // Производитель
 //            $article["SOSTAV"] = converterProperty($arProps["SOSTAV"]["VALUE_ENUM_ID"]);          // Состав
-            $article["SOSTAV"] = $arProps["SOSTAV"]["VALUE"];                    // Состав
-            $article["KOLICHESTVO"] = converterProperty($arProps["KOLICHESTVO"]["VALUE_ENUM_ID"]);  // Комплект
+            $article["SOSTAV"] = $arProps["SOSTAV"]["VALUE"];                                       // Состав
+            //$article["KOLICHESTVO"] = converterProperty($arProps["KOLICHESTVO"]["VALUE_ENUM_ID"]);  // Комплект
             $article["TSENA"] = $arProps["TSENA"]["VALUE"];                                         // Цена
-            $article["TSVET"] = /*converterСolor(*/$arProps["TSVET"]["VALUE"]/*)*/;                   // Цвет
-            $article["RAZMER"] = $arProps["RAZMER"]["VALUE"];                                       // Размер
+            $article["TSVET"] = converterСolor($arProps["TSVET"]["VALUE"]);                         // Цвет
+            $article["CML2_BASE_UNIT"] = $arProps["CML2_BASE_UNIT"]["DESCRIPTION"];                         // Колличество
+            //$article["RAZMER"] = $arProps["RAZMER"]["VALUE"];                                      // Размер
             array_push($result, $article);
 //            $result[] = trim($arProps["CML2_ARTICLE"]["VALUE"]);
         }
@@ -78,7 +79,7 @@ class Integration
                     // создаём товар
                     $productId = Integration::AddProduct(
                         trim($previousProduct["NAME"]),
-                        $previousProduct["STRANA"],
+                        $previousProduct["PROIZVODITEL"],
                         $previousProduct["KOLICHESTVO"],
                         $previousProduct["ARTICLE"],
                         $previousProduct["TSVET"]
@@ -91,18 +92,24 @@ class Integration
                         $productId,                                 // id товара
                         $previousProduct["ARTICLE"],                // артикул
                         trim($previousProduct["NAME"]),             // Название
-                        (int)$previousProduct["AKTSIYA"],           // Цена
-                        $previousProduct["SOVETUEM"],               // Цвет
-                        $previousProduct["RAZMER"]                  // Размер
+                        $previousProduct["PREVIEW_PICTURE"],                  // Анонс картинка
+                        $previousProduct["DETAIL_PICTURE"],                  // Детальная картинка
+                        (int)$previousProduct["TSENA"],           // Цена
+                        $previousProduct["TSVET"],               // Цвет
+                        $previousProduct["RAZMER"],                  // Размер
+                        $previousProduct["CML2_BASE_UNIT"]                  // Колличество товаров
                     );
                     // создаём второе торговое предложение
                     Integration::AddSellingProposition(
                         $productId,                                 // id товара
                         $getProductArticles[$i]["ARTICLE"],         // Артикль
                         trim($getProductArticles[$i]["NAME"]),     // Название
-                        (int)$getProductArticles[$i]["AKTSIYA"],   // Цена
-                        $getProductArticles[$i]["SOVETUEM"],       // Цвет
-                        $getProductArticles[$i]["RAZMER"]          // Размер
+                        $getProductArticles[$i]["PREVIEW_PICTURE"],                  // Анонс картинка
+                        $getProductArticles[$i]["DETAIL_PICTURE"],                  // Детальная картинка
+                        (int)$getProductArticles[$i]["TSENA"],   // Цена
+                        $getProductArticles[$i]["TSVET"],       // Цвет
+                        $getProductArticles[$i]["RAZMER"],                  // Размер
+                        $getProductArticles[$i]["CML2_BASE_UNIT"]                  // Колличество товаров
                     );
 //                    die();
 //
@@ -120,9 +127,12 @@ class Integration
                         $productId,                                 // id товара
                         $getProductArticles[$i]["ARTICLE"],         //Артикль
                         trim($getProductArticles[$i]["NAME"]),     // Название
-                        (int)$getProductArticles[$i]["AKTSIYA"],   // Цена
-                        $getProductArticles[$i]["SOVETUEM"],       // Цвет
-                        $getProductArticles[$i]["RAZMER"]          // Размер
+                        $getProductArticles[$i]["PREVIEW_PICTURE"],                  // Анонс картинка
+                        $getProductArticles[$i]["DETAIL_PICTURE"],                  // Детальная картинка
+                        (int)$getProductArticles[$i]["TSENA"],   // Цена
+                        $getProductArticles[$i]["TSVET"],       // Цвет
+                        $getProductArticles[$i]["RAZMER"],                  // Размер
+                        $getProductArticles[$i]["CML2_BASE_UNIT"]                  // Колличество товаров
                     );
 
                     $previousProduct = $getProductArticles[$i];
@@ -137,7 +147,7 @@ class Integration
 
     public function AddProduct($name, $STRANA, $KOLICHESTVO, $ARTICLE, $TSVET)
     {
-        $detailPicture = CFile::MakeFileArray($_SERVER["DOCUMENT_ROOT"] . "/android-chrome-192x192.png");
+//        $detailPicture = CFile::MakeFileArray($_SERVER["DOCUMENT_ROOT"] . "/android-chrome-192x192.png");
 
         // ID инфоблока
         $IBlock_ID = 25;
@@ -168,7 +178,7 @@ class Integration
             "ACTIVE" => "Y",
             "DETAIL_TEXT_TYPE" => "html",
 //            "DETAIL_TEXT" => $text,
-            "DETAIL_PICTURE" => $detailPicture,
+//            "DETAIL_PICTURE" => $detailPicture,
             "PROPERTY_VALUES" => $arOfferProps
         );
 
@@ -192,7 +202,7 @@ class Integration
 //        CPrice::Add($arFields);
     }
 
-    public function AddSellingProposition($productId, $ARTICLE, $name, $price, $COLOR, $RAZMER)
+    public function AddSellingProposition($productId, $ARTICLE, $name, $previewPicture, $detailPicture, $price, $COLOR, $RAZMER, $quantity)
     {
         $IBlockOffersCatalogId = 26; // ID инфоблока предложений (должен быть торговым каталогом)
 
@@ -217,16 +227,20 @@ class Integration
 
         $arParams = array("replace_space" => "-", "replace_other" => "-");
         $code = Cutil::translit($name, "ru", $arParams);
+        $previewPicture = CFile::MakeFileArray($previewPicture);
+        $detailPicture = CFile::MakeFileArray($detailPicture);
         $arOfferFields = array(
             'NAME' => $name,
+            "PREVIEW_PICTURE" => $previewPicture,
+            "DETAIL_PICTURE" => $detailPicture,
             "CODE" => $code,
 //            "CML2_ARTICLE" => "222",
             'IBLOCK_ID' => 26,
             'ACTIVE' => 'Y',
-            "CURRENCY" => "RUB",       // валюта
+            "CURRENCY" => "RUB",            // валюта
             "PRICE" => $price,              // значение цены
-            "CATALOG_GROUP_ID" => 1,           //
-            'PROPERTY_VALUES' => $arOfferProps
+            "CATALOG_GROUP_ID" => 1,        //
+            'PROPERTY_VALUES' => $arOfferProps,
         );
 
         // Создаём торговое предложение и получаем его ID
@@ -242,6 +256,13 @@ class Integration
         );
         // добавляем цену торговому предложению
         CPrice::Add($arFields);
+
+        // добавляет доступное колличество
+        $quantity = array(
+            "ID" => $offerId,
+            "QUANTITY" => $quantity
+        );
+        CCatalogProduct::Add($quantity);
     }
 }
 
@@ -249,9 +270,18 @@ class Integration
 
 /*Конец класса Integration*/
 
-//debug(Integration::SelectTradeOffer());
+debug(Integration::SelectTradeOffer());
 //debug(Integration::AddProduct("апрапп", "STRANA", "2a1d0fb4-c234-11e8-b93f-00247e53250b", "ARTICLE", 85));
-debug(Integration::GetProductArticles());
+//debug(Integration::GetProductArticles());
+//echo CFile::GetPath(5328);
+//Integration::AddSellingProposition(
+//    132734,                                 // id товара
+//    700,                // артикул
+//    "Любое",             // Название
+//    700,           // Цена
+//    "shokolad",               // Цвет
+//    2                  // Размер
+//);
 
 $PRODUCT_ID = 20275;
 $PRICE_TYPE_ID = 1;
