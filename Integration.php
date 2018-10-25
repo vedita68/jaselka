@@ -22,7 +22,8 @@ class Integration
         $arSelect = Array(/*"ID", "IBLOCK_ID", "NAME", "DATE_ACTIVE_FROM", "PREVIEW_PICTURE", "DETAIL_PICTURE", "PROPERTY_*"*/);
         $arFilter = Array(
             "IBLOCK_ID" => IntVal($yvalue),
-            "PROPERTY_CML2_ARTICLE" => 521
+//            "PROPERTY_CML2_ARTICLE" => 521
+            "!PROPERTY_CML2_ARTICLE" => false
 //            "PROPERTY_CML2_ARTICLE_VALUE" => "ЮС-119-01"
 //            "!PROPERTY_CML2_ARTICLE" => false
         );
@@ -174,6 +175,7 @@ class Integration
             "IBLOCK_ID" => $IBlock_ID,
             //    "IBLOCK_SECTION_ID" => $section,
             "NAME" => $name,
+            "IBLOCK_SECTION_ID" => 321,
             "CODE" => $code,
             "ACTIVE" => "Y",
             "DETAIL_TEXT_TYPE" => "html",
